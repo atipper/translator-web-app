@@ -3,7 +3,8 @@ import { useState } from "react";
 import styles from "./index.module.css";
 
 export default function Home() {
-  const [animalInput, setAnimalInput] = useState("");
+  const [textInput, setTextInput] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState("");
   const [result, setResult] = useState();
 
   async function onSubmit(event) {
@@ -14,7 +15,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ animal: animalInput }),
+        body: JSON.stringify({ text: textInput, language: selectedLanguage }),
       });
 
       const data = await response.json();
@@ -23,13 +24,25 @@ export default function Home() {
       }
 
       setResult(data.result);
-      setAnimalInput("");
-    } catch(error) {
+      setTextInput("");
+    } catch (error) {
       // Consider implementing your own error handling logic here
       console.error(error);
       alert(error.message);
     }
   }
+
+  const predefinedLanguages = [
+    { value: "en", label: "English" },
+    { value: "fr", label: "French" },
+    { value: "es", label: "Spanish" },
+    { value: "de", label: "German" },
+    { value: "it", label: "Italian" },
+    { value: "ja", label: "Japanese" },
+    { value: "zh", label: "Chinese" },
+    { value: "ru", label: "Russian" },
+    { value: "ko", label: "Korean" },
+  ];
 
   return (
     <div>
@@ -40,16 +53,28 @@ export default function Home() {
 
       <main className={styles.main}>
         <img src="/dog.png" className={styles.icon} />
-        <h3>Name my pet</h3>
+        <h3>Translate Text</h3>
         <form onSubmit={onSubmit}>
           <input
             type="text"
-            name="animal"
-            placeholder="Enter an animal"
-            value={animalInput}
-            onChange={(e) => setAnimalInput(e.target.value)}
+            name="text"
+            placeholder="Enter text to translate"
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
           />
-          <input type="submit" value="Generate names" />
+          <select
+            name="language"
+            value={selectedLanguage}
+            onChange={(e) => setSelectedLanguage(e.target.value)}
+          >
+            <option value="">Select a language</option>
+            {predefinedLanguages.map((language) => (
+              <option key={language.value} value={language.value}>
+                {language.label}
+              </option>
+            ))}
+          </select>
+          <input type="submit" value="Translate" />
         </form>
         <div className={styles.result}>{result}</div>
       </main>
