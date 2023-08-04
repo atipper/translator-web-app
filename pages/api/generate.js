@@ -1,10 +1,9 @@
-import { Configuration, OpenAIApi } from "openai";
-
+import { Configuration } from "openai";
+const baseAPI = "https://api.openai.com/v1";
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
   basePath: "https://api.openai.com/v1/chat",
 });
-const openai = new OpenAIApi(configuration);
 
 export default async function (req, res) {
   if (!configuration.apiKey) {
@@ -17,8 +16,7 @@ export default async function (req, res) {
     return;
   }
 
-  const text = req.body.text || "";
-  const language = req.body.language || "";
+  const { text, language, modelSettings } = req.body;
   if (text.trim().length === 0 || language.trim().length === 0) {
     res.status(400).json({
       error: {
@@ -29,17 +27,39 @@ export default async function (req, res) {
   }
 
   try {
-    const completion = await openai.createCompletion({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `You will act as an expert language translator. Observe the provided text and provide an accurate translation to ${language}:`,
+    let completion;
+    if (modelSettings.model === "text-davinci-003") {
+      completion = await fetch(`${baseAPI}/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${configuration.apiKey}`,
         },
-        { role: "user", content: `${text}` },
-      ],
-    });
-    const result = completion.data.choices[0].message.content;
+        body: JSON.stringify({
+          model: "text-davinci-003",
+          prompt: generatePrompt(text, language),
+          temperature: 0.6,
+        }),
+      });
+    } else {
+      completion = await fetch(`${baseAPI}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${configuration.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: modelSettings.model,
+          messages: modelSettings.messages,
+        }),
+      });
+    }
+    const completionData = await completion.json();
+    const result =
+      modelSettings.model === "text-davinci-003"
+        ? completionData.choices[0].text
+        : completionData.choices[0].message.content;
+    console.log(modelSettings.model, result);
     res.status(200).json({ result });
   } catch (error) {
     // Consider adjusting the error handling logic for your use case
@@ -55,4 +75,15 @@ export default async function (req, res) {
       });
     }
   }
+}
+
+function generatePrompt(text, language) {
+  return `Translate the following text to the specified language.
+
+Source (English): Hello, world!
+Target (Japanese): ハローワールド！
+Source (English): I hope you have a nice day.
+Target (Japanese): Ich hoffe ihr habt einen schönen Tag.
+Source (English): ${text}
+Target (${language}):`;
 }

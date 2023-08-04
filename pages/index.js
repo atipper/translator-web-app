@@ -5,22 +5,46 @@ import styles from "./index.module.css";
 export default function Home() {
   const [textInput, setTextInput] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("");
-  const [result, setResult] = useState();
-
+  const [result, setResult] = useState("");
+  const [model, setModel] = useState("gpt-3.5-turbo");
   async function onSubmit(event) {
     event.preventDefault();
     try {
+      let modelSettings;
+      if (model === "gpt-3.5-turbo" || model === "gpt-4") {
+        modelSettings = {
+          model: model,
+          messages: [
+            {
+              role: "system",
+              content: `You will act as an expert language translator. Observe the provided text and provide an accurate translation to ${selectedLanguage}:`,
+            },
+            { role: "user", content: `${textInput}` },
+          ],
+        };
+      } else if (model === "text-davinci-003") {
+        modelSettings = {
+          model: model,
+        };
+      }
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text: textInput, language: selectedLanguage }),
+        body: JSON.stringify({
+          text: textInput,
+          language: selectedLanguage,
+          modelSettings: modelSettings,
+        }),
       });
 
       const data = await response.json();
       if (response.status !== 200) {
-        throw data.error || new Error(`Request failed with status ${response.status}`);
+        throw (
+          data.error ||
+          new Error(`Request failed with status ${response.status}`)
+        );
       }
 
       setResult(data.result);
@@ -32,16 +56,22 @@ export default function Home() {
     }
   }
 
+  function handleKeyPress(event) {
+    if (event.key === "Enter") {
+      onSubmit(event);
+    }
+  }
+
   const predefinedLanguages = [
-    { value: "en", label: "English" },
-    { value: "fr", label: "French" },
-    { value: "es", label: "Spanish" },
-    { value: "de", label: "German" },
-    { value: "it", label: "Italian" },
-    { value: "ja", label: "Japanese" },
-    { value: "zh", label: "Chinese" },
-    { value: "ru", label: "Russian" },
-    { value: "ko", label: "Korean" },
+    { label: "English", value: "English" },
+    { label: "French", value: "French" },
+    { label: "Spanish", value: "Spanish" },
+    { label: "German", value: "German" },
+    { label: "Italian", value: "Italian" },
+    { label: "Japanese", value: "Japanese" },
+    { label: "Chinese", value: "Chinese" },
+    { label: "Russian", value: "Russian" },
+    { label: "Korean", value: "Korean" },
   ];
 
   return (
@@ -61,6 +91,7 @@ export default function Home() {
             placeholder="Enter text to translate"
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
+            onKeyPress={handleKeyPress}
           />
           <select
             name="language"
@@ -73,6 +104,16 @@ export default function Home() {
                 {language.label}
               </option>
             ))}
+          </select>
+          <select
+            name="model"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          >
+            <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+            <option value="gpt-4">gpt-4</option>
+            <option value="text-davinci-003">text-davinci-003</option>
+            {/* Add other model options if needed */}
           </select>
           <input type="submit" value="Translate" />
         </form>
