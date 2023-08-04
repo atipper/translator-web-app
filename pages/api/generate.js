@@ -59,7 +59,6 @@ export default async function (req, res) {
       modelSettings.model === "text-davinci-003"
         ? completionData.choices[0].text
         : completionData.choices[0].message.content;
-    console.log(modelSettings.model, result);
     res.status(200).json({ result });
   } catch (error) {
     // Consider adjusting the error handling logic for your use case
@@ -83,7 +82,7 @@ function generatePrompt(text, language) {
 Source (English): Hello, world!
 Target (Japanese): ハローワールド！
 Source (English): I hope you have a nice day.
-Target (Japanese): Ich hoffe ihr habt einen schönen Tag.
+Target (German): Ich hoffe ihr habt einen schönen Tag.
 Source (English): ${text}
 Target (${language}):`;
 }
