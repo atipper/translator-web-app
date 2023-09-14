@@ -1,9 +1,11 @@
-import { Configuration } from "openai";
+import { Configuration, OpenAIApi } from "openai";
 const baseAPI = "https://api.openai.com/v1";
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
   basePath: "https://api.openai.com/v1/chat",
 });
+
+const openai = new OpenAIApi(configuration);
 
 export default async function (req, res) {
   if (!configuration.apiKey) {
@@ -42,23 +44,17 @@ export default async function (req, res) {
         }),
       });
     } else {
-      completion = await fetch(`${baseAPI}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${configuration.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: modelSettings.model,
-          messages: modelSettings.messages,
-        }),
-      });
+      completion = openai.createCompletion({
+        model: modelSettings.model,
+        messages: modelSettings.messages,
+        temperature: 0.6
+      })
     }
-    const completionData = await completion.json();
+    const completionData = modelSettings.model === "text-davinci-003" ? await completion.json() : await completion;
     const result =
       modelSettings.model === "text-davinci-003"
         ? completionData.choices[0].text
-        : completionData.choices[0].message.content;
+        : completionData.data.choices[0].message.content;
     res.status(200).json({ result });
   } catch (error) {
     // Consider adjusting the error handling logic for your use case
